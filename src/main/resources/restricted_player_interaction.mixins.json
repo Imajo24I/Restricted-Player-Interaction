@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "net.majo24.restricted_player_interaction.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "PlayerManagerMixin",
+    "RestrictChatMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

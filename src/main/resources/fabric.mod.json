@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "restricted_player_interaction",
+	"version": "${version}",
+	"name": "Restricted Player Interaction",
+	"description": "This mod allows to restrict the interaction between players.",
+	"authors": [
+		"majo24"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "MIT",
+	"icon": "assets/restricted_player_interaction/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"net.majo24.restricted_player_interaction.RestrictedPlayerInteraction"
+		]
+	},
+	"mixins": [
+		"restricted_player_interaction.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.15.11",
+		"minecraft": "~1.20.1",
+		"java": ">=17",
+		"fabric-api": "*"
+	}
+}
