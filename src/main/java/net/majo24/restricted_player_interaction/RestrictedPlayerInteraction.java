@@ -6,6 +6,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.majo24.restricted_player_interaction.config.ConfigFileHandler;
 import net.majo24.restricted_player_interaction.config.ConfigManager;
 import net.majo24.restricted_player_interaction.config.commands.Commands;
+import net.minecraft.server.network.ServerPlayerEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,5 +23,9 @@ public class RestrictedPlayerInteraction implements ModInitializer {
 		configManager = new ConfigManager(ConfigFileHandler.getConfigFromFile(configPath), configPath);
 
 		Commands.registerCommands();
+	}
+
+	public static boolean playerHasPermission(ServerPlayerEntity player) {
+		return (player.hasPermissionLevel(configManager.getPermissionLevel()));
 	}
 }

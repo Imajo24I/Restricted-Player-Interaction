@@ -2,7 +2,6 @@ package net.majo24.restricted_player_interaction.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import net.majo24.restricted_player_interaction.RestrictedPlayerInteraction;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.server.MinecraftServer;
@@ -18,6 +17,9 @@ import org.spongepowered.asm.mixin.injection.At;
 
 import java.util.*;
 
+import static net.majo24.restricted_player_interaction.RestrictedPlayerInteraction.configManager;
+import static net.majo24.restricted_player_interaction.RestrictedPlayerInteraction.playerHasPermission;
+
 @Debug(export = true)
 @Mixin(PlayerManager.class)
 public abstract class PlayerManagerMixin {
@@ -29,33 +31,25 @@ public abstract class PlayerManagerMixin {
     @Final
     private List<ServerPlayerEntity> players;
 
-    @Shadow
-    public abstract MinecraftServer getServer();
-
-    @Shadow
-    @Final
-    private Map<UUID, ServerPlayerEntity> playerMap;
-
     @WrapOperation(
             method = "onPlayerConnect",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V")
     )
-    private void sendPlayerList(ServerPlayNetworkHandler instance, Packet<?> packet, Operation<Void> original) {
-        if (packet instanceof PlayerListS2CPacket) {
-            if (RestrictedPlayerInteraction.configManager.restrictPlayerList()
-                    && !instance.player.hasPermissionLevel(RestrictedPlayerInteraction.configManager.getPermissionLevel())) {
-                EnumSet<PlayerListS2CPacket.Action> enumSet = EnumSet.of(
-                        PlayerListS2CPacket.Action.ADD_PLAYER,
-                        PlayerListS2CPacket.Action.INITIALIZE_CHAT,
-                        PlayerListS2CPacket.Action.UPDATE_GAME_MODE,
-                        PlayerListS2CPacket.Action.UPDATE_LATENCY,
-                        PlayerListS2CPacket.Action.UPDATE_DISPLAY_NAME
-                );
+    private void sendPlayersWithoutPlayerListUpdate(ServerPlayNetworkHandler instance, Packet<?> packet, Operation<Void> original) {
+        if (packet instanceof PlayerListS2CPacket && configManager.restrictPlayerList()
+                && !playerHasPermission(instance.player)) {
+            EnumSet<PlayerListS2CPacket.Action> enumSet = EnumSet.of(
+                    PlayerListS2CPacket.Action.ADD_PLAYER,
+                    PlayerListS2CPacket.Action.INITIALIZE_CHAT,
+                    PlayerListS2CPacket.Action.UPDATE_GAME_MODE,
+                    PlayerListS2CPacket.Action.UPDATE_LATENCY,
+                    PlayerListS2CPacket.Action.UPDATE_DISPLAY_NAME
+            );
 
-                original.call(instance, new PlayerListS2CPacket(enumSet, this.players));
-            }
-
+            original.call(instance, new PlayerListS2CPacket(enumSet, this.players));
+            return;
         }
+
         original.call(instance, packet);
     }
 
@@ -63,11 +57,11 @@ public abstract class PlayerManagerMixin {
             method = "onPlayerConnect",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/server/PlayerManager;sendToAll(Lnet/minecraft/network/packet/Packet;)V")
     )
-    private void sendPlayerToEveryone(PlayerManager instance, Packet<?> packet, Operation<Void> original) {
-        if (RestrictedPlayerInteraction.configManager.restrictPlayerList()) {
-            for (ServerPlayerEntity serverPlayerEntity : this.players) {
-                if (serverPlayerEntity.hasPermissionLevel(RestrictedPlayerInteraction.configManager.getPermissionLevel())) {
-                    serverPlayerEntity.networkHandler.sendPacket(packet);
+    private void sendPlayerToPermissioned(PlayerManager instance, Packet<?> packet, Operation<Void> original) {
+        if (configManager.restrictPlayerList()) {
+            for (ServerPlayerEntity player : this.players) {
+                if (playerHasPermission(player)) {
+                    player.networkHandler.sendPacket(packet);
                 }
             }
         } else {
@@ -80,14 +74,13 @@ public abstract class PlayerManagerMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/server/PlayerManager;broadcast(Lnet/minecraft/text/Text;Z)V")
     )
 
-    private void onlyBroadcastToOp(PlayerManager instance, Text message, boolean overlay, Operation<Void> original) {
-        if (RestrictedPlayerInteraction.configManager.restrictJoinLeaveMessages()) {
+    private void onlyBroadcastToPermissioned(PlayerManager instance, Text message, boolean overlay, Operation<Void> original) {
+        if (configManager.restrictJoinLeaveMessages()) {
             this.server.sendMessage(message);
 
-            int requiredPermissionLevel = RestrictedPlayerInteraction.configManager.getPermissionLevel();
-            for (ServerPlayerEntity serverPlayerEntity : this.players) {
-                if (serverPlayerEntity.hasPermissionLevel(requiredPermissionLevel)) {
-                    serverPlayerEntity.sendMessageToClient(message, overlay);
+            for (ServerPlayerEntity player : this.players) {
+                if (playerHasPermission(player)) {
+                    player.sendMessageToClient(message, overlay);
                 }
             }
         } else {
