@@ -42,7 +42,7 @@ public abstract class PlayerManagerMixin {
     )
     private void sendPlayerList(ServerPlayNetworkHandler instance, Packet<?> packet, Operation<Void> original) {
         if (packet instanceof PlayerListS2CPacket) {
-            if (RestrictedPlayerInteraction.configManager.restrictPlayerList() && this.getServer().isRemote()
+            if (RestrictedPlayerInteraction.configManager.restrictPlayerList()
                     && !instance.player.hasPermissionLevel(RestrictedPlayerInteraction.configManager.getPermissionLevel())) {
                 EnumSet<PlayerListS2CPacket.Action> enumSet = EnumSet.of(
                         PlayerListS2CPacket.Action.ADD_PLAYER,
@@ -64,7 +64,7 @@ public abstract class PlayerManagerMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/server/PlayerManager;sendToAll(Lnet/minecraft/network/packet/Packet;)V")
     )
     private void sendPlayerToEveryone(PlayerManager instance, Packet<?> packet, Operation<Void> original) {
-        if (RestrictedPlayerInteraction.configManager.restrictPlayerList() && this.getServer().isRemote()) {
+        if (RestrictedPlayerInteraction.configManager.restrictPlayerList()) {
             for (ServerPlayerEntity serverPlayerEntity : this.players) {
                 if (serverPlayerEntity.hasPermissionLevel(RestrictedPlayerInteraction.configManager.getPermissionLevel())) {
                     serverPlayerEntity.networkHandler.sendPacket(packet);
@@ -86,7 +86,7 @@ public abstract class PlayerManagerMixin {
 
             int requiredPermissionLevel = RestrictedPlayerInteraction.configManager.getPermissionLevel();
             for (ServerPlayerEntity serverPlayerEntity : this.players) {
-                if (serverPlayerEntity.hasPermissionLevel(requiredPermissionLevel) || !this.getServer().isRemote()) {
+                if (serverPlayerEntity.hasPermissionLevel(requiredPermissionLevel)) {
                     serverPlayerEntity.sendMessageToClient(message, overlay);
                 }
             }

@@ -31,7 +31,7 @@ public abstract class RestrictChatMixin {
             )
     )
     private CompletableFuture restrictChat(MinecraftServer instance, Runnable runnable, Operation<CompletableFuture> original) {
-        if (this.player.hasPermissionLevel(RestrictedPlayerInteraction.configManager.getPermissionLevel()) || !this.server.isRemote() || !RestrictedPlayerInteraction.configManager.restrictChat()) {
+        if (this.player.hasPermissionLevel(RestrictedPlayerInteraction.configManager.getPermissionLevel()) || !RestrictedPlayerInteraction.configManager.restrictChat()) {
             original.call(instance, runnable);
         }
         return null;
@@ -46,7 +46,7 @@ public abstract class RestrictChatMixin {
     )
     public CompletableFuture restrictCommands(MinecraftServer instance, Runnable runnable, Operation<CompletableFuture> original) {
         if (RestrictedPlayerInteraction.configManager.restrictCommands()) {
-            if (this.player.hasPermissionLevel(RestrictedPlayerInteraction.configManager.getPermissionLevel()) || !this.server.isRemote()) {
+            if (this.player.hasPermissionLevel(RestrictedPlayerInteraction.configManager.getPermissionLevel())) {
                 original.call(instance, runnable);
             }
             return null;
