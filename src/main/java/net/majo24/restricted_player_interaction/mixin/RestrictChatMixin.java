@@ -19,10 +19,6 @@ public abstract class RestrictChatMixin {
     @Shadow
     public ServerPlayerEntity player;
 
-    @Shadow
-    @Final
-    private MinecraftServer server;
-
     @WrapOperation(
             method = "onChatMessage",
             at = @At(
