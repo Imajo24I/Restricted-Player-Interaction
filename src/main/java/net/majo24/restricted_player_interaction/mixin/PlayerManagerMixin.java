@@ -20,7 +20,6 @@ import java.util.*;
 import static net.majo24.restricted_player_interaction.RestrictedPlayerInteraction.configManager;
 import static net.majo24.restricted_player_interaction.RestrictedPlayerInteraction.playerHasPermission;
 
-@Debug(export = true)
 @Mixin(PlayerManager.class)
 public abstract class PlayerManagerMixin {
     @Shadow
