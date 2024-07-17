@@ -34,7 +34,7 @@ public abstract class RestrictChatMixin {
     )
     private CompletableFuture restrictChat(MinecraftServer instance, Runnable runnable, Operation<CompletableFuture> original) {
         if (!configManager.restrictChat() || playerHasPermission(this.player)) {
-            original.call(instance, runnable);
+            return original.call(instance, runnable);
         }
         return null;
     }
@@ -60,7 +60,7 @@ public abstract class RestrictChatMixin {
                     target = "Lnet/minecraft/server/PlayerManager;broadcast(Lnet/minecraft/text/Text;Z)V"
             )
     )
-    private void onlyBroadcastToPermissioned(PlayerManager instance, Text message, boolean overlay, Operation<Void> original) {
+    private void onlyBroadcastLeaveToPermissioned(PlayerManager instance, Text message, boolean overlay, Operation<Void> original) {
         if (configManager.restrictJoinLeaveMessages()) {
             this.server.sendMessage(message);
 

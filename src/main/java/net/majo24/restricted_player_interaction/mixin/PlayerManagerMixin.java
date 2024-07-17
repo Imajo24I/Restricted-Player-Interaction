@@ -21,6 +21,14 @@ import static net.majo24.restricted_player_interaction.RestrictedPlayerInteracti
 
 @Mixin(PlayerManager.class)
 public abstract class PlayerManagerMixin {
+    private static final EnumSet<PlayerListS2CPacket.Action> ENUM_SET_WITHOUT_UPDATE_LISTED_ACTION = EnumSet.of(
+            PlayerListS2CPacket.Action.ADD_PLAYER,
+            PlayerListS2CPacket.Action.INITIALIZE_CHAT,
+            PlayerListS2CPacket.Action.UPDATE_GAME_MODE,
+            PlayerListS2CPacket.Action.UPDATE_LATENCY,
+            PlayerListS2CPacket.Action.UPDATE_DISPLAY_NAME
+    );
+
     @Shadow
     @Final
     private MinecraftServer server;
@@ -36,15 +44,7 @@ public abstract class PlayerManagerMixin {
     private void sendPlayersWithoutPlayerListUpdate(ServerPlayNetworkHandler instance, Packet<?> packet, Operation<Void> original) {
         if (packet instanceof PlayerListS2CPacket && configManager.restrictPlayerList()
                 && !playerHasPermission(instance.player)) {
-            EnumSet<PlayerListS2CPacket.Action> enumSet = EnumSet.of(
-                    PlayerListS2CPacket.Action.ADD_PLAYER,
-                    PlayerListS2CPacket.Action.INITIALIZE_CHAT,
-                    PlayerListS2CPacket.Action.UPDATE_GAME_MODE,
-                    PlayerListS2CPacket.Action.UPDATE_LATENCY,
-                    PlayerListS2CPacket.Action.UPDATE_DISPLAY_NAME
-            );
-
-            original.call(instance, new PlayerListS2CPacket(enumSet, this.players));
+            original.call(instance, new PlayerListS2CPacket(ENUM_SET_WITHOUT_UPDATE_LISTED_ACTION, this.players));
             return;
         }
 
@@ -60,6 +60,8 @@ public abstract class PlayerManagerMixin {
             for (ServerPlayerEntity player : this.players) {
                 if (playerHasPermission(player)) {
                     player.networkHandler.sendPacket(packet);
+                } else {
+                    player.networkHandler.sendPacket(new PlayerListS2CPacket(ENUM_SET_WITHOUT_UPDATE_LISTED_ACTION, List.of(player)));
                 }
             }
         } else {
@@ -72,7 +74,7 @@ public abstract class PlayerManagerMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/server/PlayerManager;broadcast(Lnet/minecraft/text/Text;Z)V")
     )
 
-    private void onlyBroadcastToPermissioned(PlayerManager instance, Text message, boolean overlay, Operation<Void> original) {
+    private void onlyBroadcastJoinToPermissioned(PlayerManager instance, Text message, boolean overlay, Operation<Void> original) {
         if (configManager.restrictJoinLeaveMessages()) {
             this.server.sendMessage(message);
 
