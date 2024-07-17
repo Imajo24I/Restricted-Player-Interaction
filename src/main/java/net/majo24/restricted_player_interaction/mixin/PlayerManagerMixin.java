@@ -12,6 +12,7 @@ import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
 import java.util.*;
@@ -21,12 +22,13 @@ import static net.majo24.restricted_player_interaction.RestrictedPlayerInteracti
 
 @Mixin(PlayerManager.class)
 public abstract class PlayerManagerMixin {
-    private static final EnumSet<PlayerListS2CPacket.Action> ENUM_SET_WITHOUT_UPDATE_LISTED_ACTION = EnumSet.of(
-            PlayerListS2CPacket.Action.ADD_PLAYER,
-            PlayerListS2CPacket.Action.INITIALIZE_CHAT,
-            PlayerListS2CPacket.Action.UPDATE_GAME_MODE,
-            PlayerListS2CPacket.Action.UPDATE_LATENCY,
-            PlayerListS2CPacket.Action.UPDATE_DISPLAY_NAME
+    @Unique
+    private static final EnumSet<PlayerListS2CPacket.Action> ENUM_SET_WITHOUT_UPDATE_LISTED = EnumSet.of(
+			PlayerListS2CPacket.Action.ADD_PLAYER,
+			PlayerListS2CPacket.Action.INITIALIZE_CHAT,
+			PlayerListS2CPacket.Action.UPDATE_GAME_MODE,
+			PlayerListS2CPacket.Action.UPDATE_LATENCY,
+			PlayerListS2CPacket.Action.UPDATE_DISPLAY_NAME
     );
 
     @Shadow
@@ -44,11 +46,10 @@ public abstract class PlayerManagerMixin {
     private void sendPlayersWithoutPlayerListUpdate(ServerPlayNetworkHandler instance, Packet<?> packet, Operation<Void> original) {
         if (packet instanceof PlayerListS2CPacket && configManager.restrictPlayerList()
                 && !playerHasPermission(instance.player)) {
-            original.call(instance, new PlayerListS2CPacket(ENUM_SET_WITHOUT_UPDATE_LISTED_ACTION, this.players));
-            return;
+            original.call(instance, new PlayerListS2CPacket(ENUM_SET_WITHOUT_UPDATE_LISTED, this.players));
+        } else {
+            original.call(instance, packet);
         }
-
-        original.call(instance, packet);
     }
 
     @WrapOperation(
@@ -56,12 +57,14 @@ public abstract class PlayerManagerMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/server/PlayerManager;sendToAll(Lnet/minecraft/network/packet/Packet;)V")
     )
     private void sendPlayerToPermissioned(PlayerManager instance, Packet<?> packet, Operation<Void> original) {
+        ServerPlayerEntity joiningPlayer = players.get(players.size() - 1);
+
         if (configManager.restrictPlayerList()) {
             for (ServerPlayerEntity player : this.players) {
                 if (playerHasPermission(player)) {
                     player.networkHandler.sendPacket(packet);
                 } else {
-                    player.networkHandler.sendPacket(new PlayerListS2CPacket(ENUM_SET_WITHOUT_UPDATE_LISTED_ACTION, List.of(player)));
+                    player.networkHandler.sendPacket(new PlayerListS2CPacket(ENUM_SET_WITHOUT_UPDATE_LISTED, List.of(joiningPlayer)));
                 }
             }
         } else {
